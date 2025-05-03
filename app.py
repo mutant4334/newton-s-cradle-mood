@@ -15,15 +15,15 @@ MOODS = {
     9: "🙏 Grateful", 10: "😌 Calm"
 }
 
-# Owner's email for results visibility
-OWNER_EMAIL = "owner@example.com"
+# Owner password to view results
+OWNER_PASSWORD = "whey@protein"
 
 # Load Lottie animation
 def load_lottiefile(filepath):
     with open(filepath, "r") as f:
         return json.load(f)
 
-# Initialize data file if it doesn't exist
+# Initialize data file if not exists
 if not os.path.exists(MOOD_FILE):
     with open(MOOD_FILE, "w") as f:
         json.dump({str(k): 0 for k in MOODS.keys()}, f)
@@ -34,9 +34,9 @@ with open(MOOD_FILE, "r") as f:
 
 # Config
 st.set_page_config(page_title="Mood Cradle", layout="centered")
-st.title("🧠 Newton's Cradle Mood Survey")
+st.title("🧠 How are you feeling today")
 
-# Lottie animation
+# Show Lottie animation if mood not yet selected
 if "mood_selected" not in st.session_state:
     st.session_state.mood_selected = None
 
@@ -59,16 +59,15 @@ for i in MOODS:
         st.success(f"✅ Mood '{MOODS[i]}' selected!")
         break
 
-# If selected, show only selected mood and stop animation
+# If mood selected, show confirmation
 if st.session_state.mood_selected is not None:
     st.markdown(f"🧘‍♂️ You feel: **{MOODS[st.session_state.mood_selected]}**")
 
-# Ask for email to display results to the owner
-email = st.text_input("Enter your email to view results (for the owner only):")
+# Password prompt for owner to view results
+password = st.text_input("Enter admin password to view results:", type="password")
 
-# Show mood survey results only to the owner
-if email == OWNER_EMAIL:
-    st.subheader("📊 Mood Survey Results (Owner Only)")
+if password == OWNER_PASSWORD:
+    st.subheader("📊 Mood Survey Results (Admin Only)")
     labels = [MOODS[int(k)] for k in mood_data.keys()]
     counts = [mood_data[k] for k in mood_data.keys()]
 
@@ -79,7 +78,6 @@ if email == OWNER_EMAIL:
     plt.xticks(rotation=45, ha='right')
     st.pyplot(fig)
 
-    st.caption("🧪 Built with Streamlit | 🔒 Anonymous & Real-time")
-else:
-    if email:  # If an email is entered but not the owner's
-        st.warning("❗ You are not authorized to view the results.")
+    st.caption("🧪 Built with Streamlit | 🔒 Protected by Admin Password")
+elif password != "" and password != OWNER_PASSWORD:
+    st.warning("🚫 Incorrect password. You are not authorized to view results.")
