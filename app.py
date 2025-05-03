@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # File paths
 MOOD_FILE = "moods_data.json"
-LOTTIE_FILE = "eleven_moods.json"  # Make sure the Lottie file is here
+LOTTIE_FILE = "eleven_moods.json"  # Ensure this is the correct path to your Lottie animation file
 
 # Mood mappings (number → label)
 MOODS = {
@@ -14,18 +14,6 @@ MOODS = {
     5: "😮 Surprised", 6: "🥱 Bored", 7: "😕 Confused", 8: "❤️ Loved",
     9: "🙏 Grateful", 10: "😌 Calm"
 }
-
-# Load Lottie file
-def load_lottiefile(filepath):
-    try:
-        with open(filepath, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        print("Error: Lottie file not found. Please check the file path.")
-        return None
-    except json.JSONDecodeError:
-        print("Error: Lottie file is not a valid JSON format.")
-        return None
 
 # Initialize mood data file if it doesn't exist
 if not os.path.exists(MOOD_FILE):
@@ -46,40 +34,47 @@ if "animation_played" not in st.session_state:
 if "mood_selected" not in st.session_state:
     st.session_state.mood_selected = None
 
-# Show full animation only once
+# Function to load the Lottie file
+def load_lottiefile(filepath):
+    try:
+        with open(filepath, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        st.error(f"Lottie file not found at {filepath}. Please check the file path.")
+        return None
+
+# Display animation first
 if not st.session_state.animation_played:
     st.markdown("🎬 Watch the animation before choosing your mood:")
     
-    # Load the Lottie file with debug output
+    # Load and display the Lottie animation
     lottie = load_lottiefile(LOTTIE_FILE)
     
-    if lottie is None:
-        st.error("There was an error loading the animation. Please check the Lottie file.")
-    else:
+    if lottie:
         st_lottie(lottie, speed=1, loop=False, height=300)
-    
-    # After the animation, set the session state to show the mood selection options
-    st.session_state.animation_played = True
+        # Mark animation as played in session state after animation is shown
+        st.session_state.animation_played = True
+
 else:
-    # Mood selection after animation
+    # After animation, display mood selection buttons
     if st.session_state.mood_selected is None:
         st.subheader("👇 Tap your current mood:")
-        cols = st.columns(4)
+        cols = st.columns(4)  # Display buttons in 4 columns
         for i in MOODS:
             if cols[i % 4].button(MOODS[i]):
                 mood_data[str(i)] += 1
                 with open(MOOD_FILE, "w") as f:
                     json.dump(mood_data, f)
-                st.session_state.mood_selected = i
+                st.session_state.mood_selected = i  # Save the selected mood
                 st.success(f"✅ Mood '{MOODS[i]}' selected!")
 
-    # Show selected mood only
+    # After selecting a mood, show the mood
     if st.session_state.mood_selected is not None:
         selected_mood = MOODS[st.session_state.mood_selected]
         st.subheader("🧘 You are feeling:")
         st.markdown(f"<h2 style='text-align:center'>{selected_mood}</h2>", unsafe_allow_html=True)
 
-    # Mood bar chart
+    # Show the mood distribution bar chart
     st.subheader("📊 Mood Survey Results")
     labels = [MOODS[int(k)] for k in mood_data]
     counts = [mood_data[k] for k in mood_data]
