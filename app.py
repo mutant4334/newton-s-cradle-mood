@@ -1,15 +1,14 @@
 import streamlit as st
 import json
 import os
-import time
 from streamlit_lottie import st_lottie
 import matplotlib.pyplot as plt
 
 # File paths
 MOOD_FILE = "moods_data.json"
-LOTTIE_FILE = "eleven_moods.json"
+LOTTIE_FILE = "eleven_moods.json"  # Make sure the Lottie file is here
 
-# Mood mappings
+# Mood mappings (number → label)
 MOODS = {
     0: "😊 Happy", 1: "😢 Sad", 2: "😠 Angry", 3: "🤩 Excited", 4: "😰 Anxious",
     5: "😮 Surprised", 6: "🥱 Bored", 7: "😕 Confused", 8: "❤️ Loved",
@@ -18,37 +17,52 @@ MOODS = {
 
 # Load Lottie file
 def load_lottiefile(filepath):
-    with open(filepath, "r") as f:
-        return json.load(f)
+    try:
+        with open(filepath, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Error: Lottie file not found. Please check the file path.")
+        return None
+    except json.JSONDecodeError:
+        print("Error: Lottie file is not a valid JSON format.")
+        return None
 
-# Initialize mood data
+# Initialize mood data file if it doesn't exist
 if not os.path.exists(MOOD_FILE):
     with open(MOOD_FILE, "w") as f:
-        json.dump({str(k): 0 for k in MOODS.keys()}, f)
+        json.dump({str(k): 0 for k in MOODS}, f)
 
-# Load data
+# Load mood data
 with open(MOOD_FILE, "r") as f:
     mood_data = json.load(f)
 
-# Page settings
+# Streamlit config
 st.set_page_config(page_title="Mood Cradle", layout="centered")
-st.title("🧠 Newton's Cradle Mood Survey")
+st.title("💫 Newton's Cradle Mood Survey")
 
-# Session variables
+# Session state
 if "animation_played" not in st.session_state:
     st.session_state.animation_played = False
 if "mood_selected" not in st.session_state:
     st.session_state.mood_selected = None
 
-# Play animation only once
+# Show full animation only once
 if not st.session_state.animation_played:
-    st.markdown("⏳ Enjoy the animation before picking your mood:")
+    st.markdown("🎬 Watch the animation before choosing your mood:")
+    
+    # Load the Lottie file with debug output
     lottie = load_lottiefile(LOTTIE_FILE)
-    st_lottie(lottie, speed=1, loop=False, height=300)
+    
+    if lottie is None:
+        st.error("There was an error loading the animation. Please check the Lottie file.")
+    else:
+        st_lottie(lottie, speed=1, loop=False, height=300)
+    
+    # After the animation, set the session state to show the mood selection options
     st.session_state.animation_played = True
-    st.stop()
+    st.experimental_rerun()  # Refresh the app and show mood options after animation
 
-# After animation is done
+# Mood selection after animation
 if st.session_state.mood_selected is None:
     st.subheader("👇 Tap your current mood:")
     cols = st.columns(4)
@@ -63,20 +77,20 @@ if st.session_state.mood_selected is None:
 
 # Show selected mood only
 else:
-    mood_label = MOODS[st.session_state.mood_selected]
-    st.subheader("🧘 Your selected mood:")
-    st.markdown(f"<h2 style='text-align: center;'>{mood_label}</h2>", unsafe_allow_html=True)
+    selected_mood = MOODS[st.session_state.mood_selected]
+    st.subheader("🧘 You are feeling:")
+    st.markdown(f"<h2 style='text-align:center'>{selected_mood}</h2>", unsafe_allow_html=True)
 
 # Mood bar chart
 st.subheader("📊 Mood Survey Results")
-labels = [MOODS[int(k)] for k in mood_data.keys()]
-counts = [mood_data[k] for k in mood_data.keys()]
+labels = [MOODS[int(k)] for k in mood_data]
+counts = [mood_data[k] for k in mood_data]
 
 fig, ax = plt.subplots()
-ax.bar(labels, counts, color='mediumslateblue')
+ax.bar(labels, counts, color='skyblue')
 ax.set_ylabel("Responses")
-ax.set_title("Mood Distribution")
+ax.set_title("Current Mood Distribution")
 plt.xticks(rotation=45, ha='right')
 st.pyplot(fig)
 
-st.caption("🧪 Built with Streamlit | 🎯 Anonymous & Real-time Insights")
+st.caption("🔒 Anonymous · 🌐 Real-time · ✨ Built with Streamlit")
