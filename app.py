@@ -64,7 +64,7 @@ if st.session_state.mood_selected is not None:
     st.markdown(f"🧘‍♂️ You feel: **{MOODS[st.session_state.mood_selected]}**")
 
 # Ask for email to display results to the owner
-email = st.text_input("Enter your email to view results (for the owner only):", type="email")
+email = st.text_input("Enter your email to view results (for the owner only):")
 
 # Show mood survey results only to the owner
 if email == OWNER_EMAIL:
