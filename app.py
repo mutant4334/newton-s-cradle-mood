@@ -4,74 +4,95 @@ import os
 from streamlit_lottie import st_lottie
 import matplotlib.pyplot as plt
 
+# File paths
 MOOD_FILE = "moods_data.json"
-LOTTIE_FILE = "eleven_moods.json"
+LOTTIE_FILE = "eleven_moods.json"  # Ensure this is the correct path to your Lottie animation file
 
-# Map mood numbers to labels
+# Mood mappings (number → label)
 MOODS = {
     0: "😊 Happy", 1: "😢 Sad", 2: "😠 Angry", 3: "🤩 Excited", 4: "😰 Anxious",
     5: "😮 Surprised", 6: "🥱 Bored", 7: "😕 Confused", 8: "❤️ Loved",
     9: "🙏 Grateful", 10: "😌 Calm"
 }
 
-# Load Lottie
-def load_lottiefile(filepath):
-    with open(filepath, "r") as f:
-        return json.load(f)
-
-# Initialize data file
+# Initialize mood data file if it doesn't exist
 if not os.path.exists(MOOD_FILE):
     with open(MOOD_FILE, "w") as f:
-        json.dump({str(k): 0 for k in MOODS.keys()}, f)
+        json.dump({str(k): 0 for k in MOODS}, f)
 
-# Load data
+# Load mood data
 with open(MOOD_FILE, "r") as f:
     mood_data = json.load(f)
 
-# Config
+# Streamlit config
 st.set_page_config(page_title="Mood Cradle", layout="centered")
-st.title("🧠 Newton's Cradle Mood Survey")
+st.title("💫 Newton's Cradle Mood Survey")
 
-# Lottie animation
-clicked = False
+# Session state
+if "animation_played" not in st.session_state:
+    st.session_state.animation_played = False
 if "mood_selected" not in st.session_state:
     st.session_state.mood_selected = None
 
-if st.session_state.mood_selected is None:
-    lottie_animation = load_lottiefile(LOTTIE_FILE)
-    st_lottie(lottie_animation, speed=1, loop=True, height=250)
+# Owner's email (or ID) for results visibility
+OWNER_EMAIL = "owner@example.com"
 
-st.markdown("Tap your current **mood** and contribute anonymously 🌐")
+# Function to load the Lottie file
+def load_lottiefile(filepath):
+    try:
+        with open(filepath, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        st.error(f"Lottie file not found at {filepath}. Please check the file path.")
+        return None
 
-# Show mood buttons
-st.subheader("👇 Select a mood:")
-cols = st.columns(4)
+# Display animation first
+if not st.session_state.animation_played:
+    st.markdown("🎬 Watch the animation before choosing your mood:")
+    
+    # Load and display the Lottie animation
+    lottie = load_lottiefile(LOTTIE_FILE)
+    
+    if lottie:
+        st_lottie(lottie, speed=1, loop=False, height=300)
+        # Mark animation as played in session state after animation is shown
+        st.session_state.animation_played = True
 
-for i in MOODS:
-    if cols[i % 4].button(MOODS[i]):
-        mood_data[str(i)] += 1
-        with open(MOOD_FILE, "w") as f:
-            json.dump(mood_data, f)
-        st.session_state.mood_selected = i
-        st.success(f"✅ Mood '{MOODS[i]}' selected!")
-        break
+else:
+    # After animation, display mood selection buttons
+    if st.session_state.mood_selected is None:
+        st.subheader("👇 Tap your current mood:")
+        cols = st.columns(4)  # Display buttons in 4 columns
+        for i in MOODS:
+            if cols[i % 4].button(MOODS[i]):
+                mood_data[str(i)] += 1
+                with open(MOOD_FILE, "w") as f:
+                    json.dump(mood_data, f)
+                st.session_state.mood_selected = i  # Save the selected mood
+                st.success(f"✅ Mood '{MOODS[i]}' selected!")
 
-# If selected, show only selected mood and stop animation
-if st.session_state.mood_selected is not None:
-    st.markdown(f"🧘‍♂️ You feel: **{MOODS[st.session_state.mood_selected]}**")
-    # Optionally re-render static image, segment, or freeze lottie here
+    # After selecting a mood, show the mood
+    if st.session_state.mood_selected is not None:
+        selected_mood = MOODS[st.session_state.mood_selected]
+        st.subheader("🧘 You are feeling:")
+        st.markdown(f"<h2 style='text-align:center'>{selected_mood}</h2>", unsafe_allow_html=True)
 
-# Show bar chart
-st.subheader("📊 Mood Survey Results")
-labels = [MOODS[int(k)] for k in mood_data.keys()]
-counts = [mood_data[k] for k in mood_data.keys()]
+    # Ask for email if the user is the owner
+    email = st.text_input("Enter your email to view results (for the owner only):", type="email")
 
-fig, ax = plt.subplots()
-ax.bar(labels, counts, color='coral')
-ax.set_ylabel("Responses")
-ax.set_title("Mood Distribution")
-plt.xticks(rotation=45, ha='right')
-st.pyplot(fig)
+    # Show the mood distribution bar chart only to the owner
+    if email == OWNER_EMAIL:
+        st.subheader("📊 Mood Survey Results (Owner Only)")
+        labels = [MOODS[int(k)] for k in mood_data]
+        counts = [mood_data[k] for k in mood_data]
 
-st.caption("🧪 Built with Streamlit | 🔒 Anonymous & Real-time")
+        fig, ax = plt.subplots()
+        ax.bar(labels, counts, color='skyblue')
+        ax.set_ylabel("Responses")
+        ax.set_title("Current Mood Distribution")
+        plt.xticks(rotation=45, ha='right')
+        st.pyplot(fig)
 
+        st.caption("🔒 Anonymous · 🌐 Real-time · ✨ Built with Streamlit")
+    elif email:
+        st.warning("❗ You are not authorized to view the results.")
