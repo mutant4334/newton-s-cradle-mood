@@ -60,37 +60,35 @@ if not st.session_state.animation_played:
     
     # After the animation, set the session state to show the mood selection options
     st.session_state.animation_played = True
-    st.experimental_rerun()  # Refresh the app and show mood options after animation
-
-# Mood selection after animation
-if st.session_state.mood_selected is None:
-    st.subheader("👇 Tap your current mood:")
-    cols = st.columns(4)
-    for i in MOODS:
-        if cols[i % 4].button(MOODS[i]):
-            mood_data[str(i)] += 1
-            with open(MOOD_FILE, "w") as f:
-                json.dump(mood_data, f)
-            st.session_state.mood_selected = i
-            st.success(f"✅ Mood '{MOODS[i]}' selected!")
-            st.experimental_rerun()
-
-# Show selected mood only
 else:
-    selected_mood = MOODS[st.session_state.mood_selected]
-    st.subheader("🧘 You are feeling:")
-    st.markdown(f"<h2 style='text-align:center'>{selected_mood}</h2>", unsafe_allow_html=True)
+    # Mood selection after animation
+    if st.session_state.mood_selected is None:
+        st.subheader("👇 Tap your current mood:")
+        cols = st.columns(4)
+        for i in MOODS:
+            if cols[i % 4].button(MOODS[i]):
+                mood_data[str(i)] += 1
+                with open(MOOD_FILE, "w") as f:
+                    json.dump(mood_data, f)
+                st.session_state.mood_selected = i
+                st.success(f"✅ Mood '{MOODS[i]}' selected!")
 
-# Mood bar chart
-st.subheader("📊 Mood Survey Results")
-labels = [MOODS[int(k)] for k in mood_data]
-counts = [mood_data[k] for k in mood_data]
+    # Show selected mood only
+    if st.session_state.mood_selected is not None:
+        selected_mood = MOODS[st.session_state.mood_selected]
+        st.subheader("🧘 You are feeling:")
+        st.markdown(f"<h2 style='text-align:center'>{selected_mood}</h2>", unsafe_allow_html=True)
 
-fig, ax = plt.subplots()
-ax.bar(labels, counts, color='skyblue')
-ax.set_ylabel("Responses")
-ax.set_title("Current Mood Distribution")
-plt.xticks(rotation=45, ha='right')
-st.pyplot(fig)
+    # Mood bar chart
+    st.subheader("📊 Mood Survey Results")
+    labels = [MOODS[int(k)] for k in mood_data]
+    counts = [mood_data[k] for k in mood_data]
 
-st.caption("🔒 Anonymous · 🌐 Real-time · ✨ Built with Streamlit")
+    fig, ax = plt.subplots()
+    ax.bar(labels, counts, color='skyblue')
+    ax.set_ylabel("Responses")
+    ax.set_title("Current Mood Distribution")
+    plt.xticks(rotation=45, ha='right')
+    st.pyplot(fig)
+
+    st.caption("🔒 Anonymous · 🌐 Real-time · ✨ Built with Streamlit")
