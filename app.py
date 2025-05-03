@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # File paths
 MOOD_FILE = "moods_data.json"
-LOTTIE_FILE = "eleven_moods.json"
+LOTTIE_FILE = "eleven_moods.json"  # Make sure the Lottie file is here
 
 # Mood mappings (number → label)
 MOODS = {
@@ -17,8 +17,15 @@ MOODS = {
 
 # Load Lottie file
 def load_lottiefile(filepath):
-    with open(filepath, "r") as f:
-        return json.load(f)
+    try:
+        with open(filepath, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Error: Lottie file not found. Please check the file path.")
+        return None
+    except json.JSONDecodeError:
+        print("Error: Lottie file is not a valid JSON format.")
+        return None
 
 # Initialize mood data file if it doesn't exist
 if not os.path.exists(MOOD_FILE):
@@ -42,8 +49,15 @@ if "mood_selected" not in st.session_state:
 # Show full animation only once
 if not st.session_state.animation_played:
     st.markdown("🎬 Watch the animation before choosing your mood:")
+    
+    # Load the Lottie file with debug output
     lottie = load_lottiefile(LOTTIE_FILE)
-    st_lottie(lottie, speed=1, loop=False, height=300)
+    
+    if lottie is None:
+        st.error("There was an error loading the animation. Please check the Lottie file.")
+    else:
+        st_lottie(lottie, speed=1, loop=False, height=300)
+    
     st.session_state.animation_played = True
     st.stop()
 
