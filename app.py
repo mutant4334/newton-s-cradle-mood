@@ -18,6 +18,11 @@ MOODS = {
 # Owner's email for results visibility
 OWNER_EMAIL = "owner@example.com"
 
+# Load Lottie animation
+def load_lottiefile(filepath):
+    with open(filepath, "r") as f:
+        return json.load(f)
+
 # Initialize data file if it doesn't exist
 if not os.path.exists(MOOD_FILE):
     with open(MOOD_FILE, "w") as f:
