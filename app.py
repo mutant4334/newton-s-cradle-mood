@@ -1,3 +1,4 @@
+pip install streamlit matplotlib
 import streamlit as st
 import json
 import os
