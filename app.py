@@ -1,80 +1,104 @@
 import streamlit as st
 import json
 import os
-import plotly.express as px
+import matplotlib.pyplot as plt
 
-# --- CONFIG ---
+from streamlit_lottie import st_lottie
+import plotly.graph_objects as go
+
+# Config
+st.set_page_config(page_title="Mood Cradle", layout="centered")
+st.title("🎯 Newton's Cradle Mood Survey")
+
+# Constants
 MOOD_FILE = "moods_data.json"
-OWNER_PASSWORD = "admin123"  # 🔒 Change this to your private password
+LOTTIE_FILE = "five_moods.json"  # Make sure you use correct 5-mood Lottie file
+OWNER_PASSWORD = "your_password_here"
 
+# Five mood options
 MOODS = {
     0: "😊 Happy",
     1: "😢 Sad",
     2: "😠 Angry",
-    3: "🤩 Excited",
+    3: "😰 Anxious",
     4: "😌 Calm"
 }
 
-# --- INIT ---
-if not os.path.exists(MOOD_FILE):
+# Functions
+def load_lottiefile(filepath):
+    with open(filepath, "r") as f:
+        return json.load(f)
+
+def initialize_data_file():
+    if not os.path.exists(MOOD_FILE):
+        with open(MOOD_FILE, "w") as f:
+            json.dump({str(k): 0 for k in MOODS.keys()}, f)
+
+def save_data(data):
     with open(MOOD_FILE, "w") as f:
-        json.dump({str(k): 0 for k in MOODS.keys()}, f)
+        json.dump(data, f)
 
-with open(MOOD_FILE, "r") as f:
-    mood_data = json.load(f)
+def load_data():
+    with open(MOOD_FILE, "r") as f:
+        return json.load(f)
 
-# --- STREAMLIT CONFIG ---
-st.set_page_config(page_title="Mood Pie", layout="centered")
-st.title("🎯 Mood Pie Survey")
+# Initialization
+initialize_data_file()
+mood_data = load_data()
 
-st.markdown("Tap the mood you're feeling right now. It's anonymous and helps track the vibe! 🌐")
+# Session state
+if "mood_selected" not in st.session_state:
+    st.session_state.mood_selected = None
 
-# --- PIE CHART ---
-labels = [MOODS[int(k)] for k in mood_data.keys()]
-values = [mood_data[k] for k in mood_data.keys()]
-colors = px.colors.qualitative.Pastel
+if "owner_access" not in st.session_state:
+    st.session_state.owner_access = False
 
-fig = px.pie(
-    names=labels,
-    values=values,
-    title="Live Mood Distribution",
-    color_discrete_sequence=colors,
-    hole=0.3
-)
-fig.update_traces(textinfo='label+percent', pull=[0.05]*len(labels))
+# Lottie Animation (Optional)
+lottie_animation = load_lottiefile(LOTTIE_FILE)
+st_lottie(lottie_animation, speed=1, loop=False, height=250)
 
-st.plotly_chart(fig, use_container_width=True)
+# Mood Selection
+st.markdown("### Tap to select your current **mood**:")
 
-# --- MOOD SELECTION ---
-st.subheader("👇 How do you feel?")
 cols = st.columns(5)
-
 for i in MOODS:
     if cols[i % 5].button(MOODS[i]):
         mood_data[str(i)] += 1
-        with open(MOOD_FILE, "w") as f:
-            json.dump(mood_data, f)
-        st.success(f"✅ You selected: {MOODS[i]}")
-        st.rerun()
+        save_data(mood_data)
+        st.session_state.mood_selected = i
+        st.success(f"✅ Mood '{MOODS[i]}' submitted anonymously!")
+        break
 
-# --- OWNER TOOLS ---
-st.markdown("---")
-with st.expander("🔒 Admin Panel"):
-    password = st.text_input("Enter admin password to view or reset data:", type="password")
+# Show selected mood
+if st.session_state.mood_selected is not None:
+    st.markdown(f"🧘‍♂️ You feel: **{MOODS[st.session_state.mood_selected]}**")
 
-    if password == OWNER_PASSWORD:
-        st.success("🔐 Access granted!")
+# Owner login
+with st.expander("🔒 Admin: View Results / Reset"):
+    password_input = st.text_input("Enter password:", type="password")
+    if st.button("Login as Owner"):
+        if password_input == OWNER_PASSWORD:
+            st.session_state.owner_access = True
+            st.success("🟢 Access granted!")
+        else:
+            st.error("❌ Incorrect password.")
 
-        if st.button("🔄 Reset All Data"):
-            mood_data = {str(k): 0 for k in MOODS}
-            with open(MOOD_FILE, "w") as f:
-                json.dump(mood_data, f)
-            st.success("✅ Mood data has been reset!")
-            st.rerun()
+# Show results (owner only)
+if st.session_state.owner_access:
+    st.subheader("📊 Mood Survey Results")
 
-        st.subheader("📊 Current Mood Data")
-        st.json(mood_data)
-    elif password:
-        st.error("❌ Incorrect password!")
+    # Filter valid moods only
+    labels = [MOODS[int(k)] for k in mood_data.keys() if int(k) in MOODS]
+    values = [mood_data[k] for k in mood_data.keys() if int(k) in MOODS]
 
-st.caption("✨ Made with Streamlit | Anonymous & Real-time")
+    # Plotly Pie Chart
+    fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=0.4)])
+    fig.update_traces(textinfo='label+percent', pull=[0.05]*len(labels), marker=dict(colors=['#FF9999','#66B2FF','#99FF99','#FFCC99','#CCCCFF']))
+    st.plotly_chart(fig)
+
+    # Reset button
+    if st.button("🔄 Reset Mood Data"):
+        save_data({str(k): 0 for k in MOODS.keys()})
+        st.success("Data has been reset.")
+
+st.caption("🧪 Built with Streamlit | 🔒 Anonymous & Real-time")
