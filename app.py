@@ -26,87 +26,159 @@ with open(MOOD_FILE, "r") as f:
 
 # ---------- Streamlit Page Setup ----------
 st.set_page_config(page_title="Mood Cradle Survey", layout="centered")
-st.title("🎯 Newton's Cradle Mood Survey (5 Moods)")
+st.markdown("<h1 class='title'>🎯 Newton's Cradle Mood Survey (5 Moods)</h1>", unsafe_allow_html=True)
 st.markdown("Choose your current **mood** below:")
 
 # ---------- Custom Styling for Aesthetics ----------
 st.markdown("""
     <style>
+        /* Global Styles */
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Helvetica Neue', sans-serif;
+            color: #333;
+        }
+
+        /* Title Styling */
         .title {
-            font-size: 32px;
+            font-size: 36px;
             font-weight: bold;
-            color: #4C8BF5;
+            color: #3e4e57;
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 20px;
         }
+
+        /* Subheader Styling */
         .subheader {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
-            color: #F06292;
+            color: #FF4081;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 10px;
         }
+
+        /* Button Styling */
         .button {
             font-size: 18px;
-            padding: 15px;
+            font-weight: bold;
+            padding: 15px 25px;
             background-color: #FF4081;
             color: white;
             border: none;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.3s;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
         }
+
         .button:hover {
             background-color: #D81B60;
+            transform: translateY(-5px);
         }
+
+        .button:active {
+            transform: translateY(0);
+            background-color: #C2185B;
+        }
+
+        /* Container Layout for Buttons */
         .container {
             display: flex;
             justify-content: center;
             align-items: center;
             margin-top: 20px;
+            flex-wrap: wrap;
+            gap: 20px;
         }
+
+        /* Mood Option Styling */
+        .mood-btn {
+            width: 180px;
+            height: 100px;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: bold;
+            background-color: #F48FB1;
+            color: white;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .mood-btn:hover {
+            background-color: #F06292;
+            transform: scale(1.05);
+        }
+
+        /* Chart Styling */
         .piechart {
-            border-radius: 10px;
-            padding: 10px;
-            background-color: #f1f1f1;
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+        }
+
+        /* Password Box Styling */
+        .password-box {
+            width: 300px;
+            padding: 12px;
+            margin-top: 20px;
+            border: 1px solid #FF4081;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        /* Footer Styling */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 14px;
+            color: #777;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# ---------- Mood Selection ----------
-st.subheader("👇 Tap a mood:")
-cols = st.columns(5)
-
-# Buttons with Icons (Hover Effects)
-for i in MOODS:
-    if cols[i % 5].button(f"{MOODS[i]}", key=f"mood_{i}", help="Click to select mood", use_container_width=True):
-        mood_data[str(i)] += 1
-        with open(MOOD_FILE, "w") as f:
-            json.dump(mood_data, f)
-        st.success(f"✅ Mood '{MOODS[i]}' recorded!")
-        st.stop()
-
-# ---------- Owner-only Result Access ----------
-st.markdown("---")
-st.subheader("🔐 View Mood Results (Owner Only)")
-password = st.text_input("Enter password to view results:", type="password")
-
+# Password protection
+password = st.text_input("Enter Password", type="password", key="password_input")
 if password == PASSWORD:
-    st.success("Access granted. Showing results...")
+    st.success("Access granted!")
 
-    # ---------- Pie Chart Visualization ----------
-    labels = [MOODS[int(k)] for k in mood_data]
-    sizes = [mood_data[k] for k in mood_data]
+    # Display mood options
+    st.markdown("<h2 class='subheader'>Select Your Mood</h2>", unsafe_allow_html=True)
 
-    fig, ax = plt.subplots()
-    ax.pie(sizes, labels=labels, startangle=90, autopct='%1.1f%%', shadow=True)
-    ax.axis('equal')  # Equal aspect ratio ensures the pie is drawn as a circle.
+    # Layout for mood buttons
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        for i in range(0, 2):
+            if st.button(MOODS[i], key=i):
+                mood_data[str(i)] += 1
+    with col2:
+        for i in range(2, 4):
+            if st.button(MOODS[i], key=i):
+                mood_data[str(i)] += 1
+    with col3:
+        if st.button(MOODS[4], key=4):
+            mood_data[str(4)] += 1
+
+    # Save updated mood data
+    with open(MOOD_FILE, "w") as f:
+        json.dump(mood_data, f)
+
+    # Show mood pie chart
+    st.markdown("<div class='piechart'>", unsafe_allow_html=True)
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.pie(list(mood_data.values()), labels=MOODS.values(), autopct='%1.1f%%', startangle=90)
+    ax.axis('equal')
     st.pyplot(fig)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    # ---------- Reset Option for the Owner ----------
-    if st.button("♻️ Reset All Results"):
-        with open(MOOD_FILE, "w") as f:
-            json.dump({str(k): 0 for k in MOODS}, f)
-        st.success("✅ All results reset.")
-        st.experimental_rerun()
-
-elif password:
-    st.error("Incorrect password.")
-
-# ---------- Footer ----------
-st.caption("📊 Anonymous & Secure | Built with ❤️ using Streamlit")
+else:
+    st.error("Incorrect password, please try again.")
